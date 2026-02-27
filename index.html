@@ -1,9 +1,82 @@
-<h1>THE 12 CLASS PREPARATION DOCUMENTARY</h1>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Discipline AI</title>
 
-<div id="current-session"></div>
-<div id="timer-display"></div>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
 
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.6.0"></script>
+
+<style>
+body{
+background:#0f0f0f;
+color:white;
+font-family:Arial;
+text-align:center;
+margin:0;
+padding:20px;
+}
+#dashboard{
+max-width:600px;
+margin:auto;
+}
+.box{
+background:#1c1c1c;
+padding:20px;
+margin:15px 0;
+border-radius:12px;
+}
+button{
+padding:10px 20px;
+font-size:16px;
+background:#00ff88;
+border:none;
+border-radius:8px;
+cursor:pointer;
+}
+#timer-display{
+font-size:40px;
+font-weight:bold;
+}
+</style>
+
+</head>
+<body>
+
+<h1>Discipline AI – Class 12 System</h1>
+
+<div id="dashboard">
+
+<div class="box">
+<h2>Current Session</h2>
+<div id="current-session">Waiting...</div>
+</div>
+
+<div class="box">
+<h2>Timer</h2>
+<div id="timer-display">00:00:00</div>
+</div>
+
+<div class="box">
 <button onclick="startFullDay()">START DAY</button>
+</div>
+
+<div class="box">
+<h2>Stats</h2>
+<div id="stats-display"></div>
+</div>
+
+<div class="box">
+<h2>Strict Mode</h2>
+<div id="strict-status"></div>
+</div>
+
+</div>
 
 <video id="cameraFeed" autoplay playsinline
 style="position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;">
@@ -12,3 +85,18 @@ style="position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;">
 <div id="dailySummaryScreen" style="display:none;">
    <div id="dailySummaryContent"></div>
 </div>
+
+<script src="sessions.js"></script>
+<script src="stats.js"></script>
+<script src="strict.js"></script>
+<script src="ai.js"></script>
+<script src="app.js"></script>
+
+<script>
+if ('serviceWorker' in navigator) {
+ navigator.serviceWorker.register('sw.js');
+}
+</script>
+
+</body>
+</html>
