@@ -40,6 +40,9 @@ function startNextBlock(){
 
  document.getElementById("current-session").innerText = block.name;
 
+ // 🔊 AI बोलेगा
+ announceSession(block.name);
+
  startTimer(block.duration);
 }
 
@@ -53,6 +56,10 @@ function startTimer(minutes){
 
   if(timeLeft <= 0){
    clearInterval(blockInterval);
+
+   // 🔊 Block खत्म होने पर बोलेगा
+   announceBreak();
+
    currentBlockIndex++;
    startNextBlock();
    return;
