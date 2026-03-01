@@ -2,7 +2,20 @@ let currentSessionIndex = 0;
 let currentBlockIndex = 0;
 let blockInterval;
 
+function formatTime(seconds){
+ const hrs = Math.floor(seconds / 3600);
+ const mins = Math.floor((seconds % 3600) / 60);
+ const secs = seconds % 60;
+
+ return (
+  String(hrs).padStart(2,'0') + ":" +
+  String(mins).padStart(2,'0') + ":" +
+  String(secs).padStart(2,'0')
+ );
+}
+
 function startFullDay(){
+ clearInterval(blockInterval);
  currentSessionIndex = 0;
  currentBlockIndex = 0;
  startNextBlock();
@@ -11,7 +24,6 @@ function startFullDay(){
 function startNextBlock(){
 
  if(currentSessionIndex >= dailySessions.length){
-  showDailySummary();
   return;
  }
 
@@ -28,11 +40,12 @@ function startNextBlock(){
 
  document.getElementById("current-session").innerText = block.name;
 
- handleBlockType(block.type);
  startTimer(block.duration);
 }
 
 function startTimer(minutes){
+
+ clearInterval(blockInterval);
 
  let timeLeft = minutes * 60;
 
@@ -46,18 +59,7 @@ function startTimer(minutes){
   }
 
   timeLeft--;
-  document.getElementById("timer-display").innerText = timeLeft;
+  document.getElementById("timer-display").innerText = formatTime(timeLeft);
 
  },1000);
-}
-
-function handleBlockType(type){
-
- if(type === "study"){
-  attentionTrackingActive = true;
-  startCamera();
- } else {
-  attentionTrackingActive = false;
-  stopCamera();
- }
 }
