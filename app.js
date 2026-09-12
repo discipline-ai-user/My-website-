@@ -1,72 +1,26 @@
-let currentSessionIndex = 0;
-let currentBlockIndex = 0;
-let blockInterval;
-
-function formatTime(seconds){
- const hrs = Math.floor(seconds / 3600);
- const mins = Math.floor((seconds % 3600) / 60);
- const secs = seconds % 60;
-
- return (
-  String(hrs).padStart(2,'0') + ":" +
-  String(mins).padStart(2,'0') + ":" +
-  String(secs).padStart(2,'0')
- );
-}
-
-function startFullDay(){
- clearInterval(blockInterval);
- currentSessionIndex = 0;
- currentBlockIndex = 0;
- startNextBlock();
-}
-
-function startNextBlock(){
-
- if(currentSessionIndex >= dailySessions.length){
-  return;
- }
-
- const session = dailySessions[currentSessionIndex];
-
- if(currentBlockIndex >= session.length){
-  currentSessionIndex++;
-  currentBlockIndex = 0;
-  startNextBlock();
-  return;
- }
-
- const block = session[currentBlockIndex];
-
- document.getElementById("current-session").innerText = block.name;
-
- // 🔊 AI बोलेगा
- announceSession(block.name);
-
- startTimer(block.duration);
-}
-
-function startTimer(minutes){
-
- clearInterval(blockInterval);
-
- let timeLeft = minutes * 60;
-
- blockInterval = setInterval(()=>{
-
-  if(timeLeft <= 0){
-   clearInterval(blockInterval);
-
-   // 🔊 Block खत्म होने पर बोलेगा
-   announceBreak();
-
-   currentBlockIndex++;
-   startNextBlock();
-   return;
-  }
-
-  timeLeft--;
-  document.getElementById("timer-display").innerText = formatTime(timeLeft);
-
- },1000);
-}
+const subjects={Physics:['Electric Charges and Fields','Electrostatic Potential and Capacitance','Current Electricity','Moving Charges and Magnetism','Magnetism and Matter','Electromagnetic Induction','Alternating Current','Electromagnetic Waves','Ray Optics and Optical Instruments','Wave Optics','Dual Nature of Radiation and Matter','Atoms','Nuclei','Semiconductor Electronics'],Chemistry:['Solutions','Electrochemistry','Chemical Kinetics','d- and f-Block Elements','Coordination Compounds','Haloalkanes and Haloarenes','Alcohols, Phenols and Ethers','Aldehydes, Ketones and Carboxylic Acids','Amines','Biomolecules, Polymers and Chemistry in Everyday Life'],Mathematics:['Relations and Functions','Inverse Trigonometric Functions','Matrices','Determinants','Continuity and Differentiability','Application of Derivatives','Integrals','Application of Integrals','Differential Equations','Vector Algebra','Three Dimensional Geometry','Linear Programming','Probability']};
+let tests=JSON.parse(localStorage.getItem('dai_tests')||'[]'), currentTest=null, qIndex=0, answers={}, testTimer=null;
+const $=id=>document.getElementById(id); const esc=s=>String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+function toast(x){$('toast').textContent=x;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),2200)}
+function save(){localStorage.setItem('dai_tests',JSON.stringify(tests))}
+function layout(){return `<aside class="side" id="side"><div class="brand"><div class="logo">✦</div>Discipline AI</div><nav class="nav">${[['dashboard','🏠','Dashboard'],['mock','📝','Start Mock Test'],['pyq','📚','Upload PYQ'],['tests','🗂️','My Tests'],['wrong','❌','Wrong Questions'],['weak','🎯','Weak Topics'],['practice','🤖','Fresh Practice'],['syllabus','📖','Syllabus'],['progress','📈','Progress'],['settings','⚙️','Settings']].map(x=>`<button data-page="${x[0]}">${x[1]} &nbsp; ${x[2]}</button>`).join('')}</nav><div class="mini"><div class="avatar">S</div><div><b>Sajid</b><div class="muted" style="font-size:11px">Class 12 • Science</div></div></div></aside><main class="main"><div class="top"><button class="mobile" onclick="$('side').classList.toggle('open')">☰</button><div></div><button class="btn ghost" onclick="show('settings')">⚙️ Settings</button></div><div id="pages"></div></main>`}
+function page(id,title,sub,body){return `<section class="page" id="page-${id}"><div class="eyebrow">Discipline AI</div><h1 class="title">${title}</h1><p class="sub">${sub}</p>${body}</section>`}
+function dashboard(){let avg=tests.length?Math.round(tests.reduce((a,t)=>a+t.percent,0)/tests.length):0;return page('dashboard','Good evening, Sajid 👋','Your Class 12 Bihar Board Science study command center.',`<div class="grid stats"><div class="card stat"><span>Tests Attempted</span><b>${tests.length}</b></div><div class="card stat"><span>Average Score</span><b>${avg}%</b></div><div class="card stat"><span>Accuracy</span><b>${avg}%</b></div><div class="card stat"><span>Weak Topics</span><b>${tests.length?3:0}</b></div></div><div class="grid cols"><div class="card"><div class="section"><h3>Start Mock Test</h3><button class="btn" onclick="show('mock')">Create Test</button></div><p class="muted">Chapter, topic, subject, PYQ or full-subject tests with configurable questions and timer.</p><div class="actions"><button class="btn secondary" onclick="quickTest('Physics')">Physics</button><button class="btn secondary" onclick="quickTest('Chemistry')">Chemistry</button><button class="btn secondary" onclick="quickTest('Mathematics')">Mathematics</button></div></div><div class="card"><h3>Overall Progress</h3><p class="muted">Based on saved attempts</p><div class="progress"><i style="width:${avg}%"></i></div><p>${avg}% average performance</p></div></div><div class="grid menus" style="margin-top:16px">${[['📚','Upload PYQ','Add photo, PDF or manual questions.','pyq'],['❌','Wrong Questions','Retry questions you missed.','wrong'],['🎯','Weak Topics','Track chapter → topic weaknesses.','weak'],['🤖','Fresh Practice','Generate targeted practice.','practice'],['📈','Test History','Review every attempt.','tests'],['📖','Syllabus','Physics, Chemistry, Mathematics.','syllabus']].map(x=>`<div class="card menu"><div class="ico">${x[0]}</div><div><h3>${x[1]}</h3><p>${x[2]}</p></div><button class="btn ghost" onclick="show('${x[3]}')">Open</button></div>`).join('')}</div>`)}
+function mock(){return page('mock','Create Mock Test','Choose your scope, question count and timer.',`<div class="card form"><div class="row"><div><div class="label">Subject</div><select id="mSubject" class="select"><option>Physics</option><option>Chemistry</option><option>Mathematics</option><option>All Subjects</option></select></div><div><div class="label">Questions</div><input id="mCount" class="input" type="number" min="1" max="30" value="10"></div></div><div><div class="label">Chapter / Topic</div><select id="mChapter" class="select"><option>Full Subject</option></select></div><div class="row"><div><div class="label">Timer (minutes)</div><input id="mTime" class="input" type="number" min="1" value="15"></div><div><div class="label">Mode</div><select class="select"><option>MCQ</option><option>PYQ</option></select></div></div><div class="actions"><button class="btn" onclick="startGeneratedTest()">🚀 Start Mock Test</button><button class="btn secondary" onclick="show('dashboard')">Cancel</button></div></div>`)}
+function syllabus(){return page('syllabus','Class 12 Syllabus','Bihar Board Science structure — chapter lists ready for test selection.',`<div class="card syllabus">${Object.entries(subjects).map(([s,cs])=>`<details class="subject"><summary>${s} <span class="muted">(${cs.length} chapters)</span></summary><div class="chapters">${cs.map((c,i)=>`<div class="chapter"><span>${i+1}. ${c}</span><span class="pill">Practice</span></div>`).join('')}</div></details>`).join('')}</div>`)}
+function testsPage(){return page('tests','Test History','Every completed attempt is saved locally with score, accuracy and time.',`<div class="card">${tests.length?`<table class="table"><thead><tr><th>Date</th><th>Subject</th><th>Score</th><th>Accuracy</th></tr></thead><tbody>${tests.slice().reverse().map(t=>`<tr><td>${new Date(t.date).toLocaleString()}</td><td>${esc(t.subject)}</td><td>${t.score}/${t.total}</td><td>${t.percent}%</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No test attempts yet. Start your first mock test.</div>'}</div>`)}
+function generic(id,title,sub,text){return page(id,title,sub,`<div class="card"><div class="empty">${text}</div></div>`)}
+function pyq(){return page('pyq','Upload PYQ','Original questions remain untouched. Add a photo, PDF or manual question set.',`<div class="card form"><input class="input" type="file" accept="image/*,.pdf"><textarea id="manual" class="input" rows="6" placeholder="Or paste/manual-enter questions here..."></textarea><button class="btn" onclick="toast('PYQ draft saved locally')">Save PYQ</button></div>`)}
+function settings(){return page('settings','Settings','Test defaults, timer, appearance and account controls.',`<div class="card form"><label><span class="label">Default questions</span><input class="input" type="number" value="10"></label><label><span class="label">Default timer (minutes)</span><input class="input" type="number" value="15"></label><label><span class="label">Appearance</span><select class="select"><option>Dark</option><option>Light</option></select></label><button class="btn" onclick="toast('Settings saved')">Save Settings</button></div>`)}
+function render(){ $('root').innerHTML=layout();$('pages').innerHTML=[dashboard(),mock(),pyq(),testsPage(),generic('wrong','Wrong Questions','Practice what you got wrong.','Complete a mock test to build your wrong-question bank.'),generic('weak','Weak Topics','Chapter → topic tracking.','Your weak-topic map will appear after attempts.'),generic('practice','Fresh Practice','AI-targeted practice.','Complete tests so practice can target your actual weaknesses.'),syllabus(),generic('progress','Progress','Subject-wise, chapter-wise and topic-wise improvement.','Your progress charts will populate from saved test history.'),settings()].join('');document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>show(b.dataset.page));show('dashboard')}
+function show(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));$('page-'+id)?.classList.add('active');document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===id));if(id==='tests')document.getElementById('page-tests').outerHTML=testsPage();if(id==='mock'){let s=$('mSubject');if(s)s.onchange=updateChapters}window.scrollTo(0,0)}
+function updateChapters(){let s=$('mSubject')?.value;if(!$('mChapter'))return;$('mChapter').innerHTML='<option>Full Subject</option>'+(subjects[s]||[]).map(x=>`<option>${esc(x)}</option>`).join('')}
+function quickTest(s){show('mock');setTimeout(()=>{$('mSubject').value=s;updateChapters();startGeneratedTest()},50)}
+function makeQuestions(subject,count){let pool=subject==='All Subjects'?[...subjects.Physics,...subjects.Chemistry,...subjects.Mathematics]:subjects[subject]||subjects.Physics;return Array.from({length:count},(_,i)=>{let topic=pool[i%pool.length];return {q:`Which option best represents a key concept from “${topic}”?`,options:[`Definition and core principle of ${topic}`,`Only a historical fact unrelated to ${topic}`,`A value that is always zero`,`None of these`],answer:0,topic}})}
+function startGeneratedTest(){let subject=$('mSubject').value,count=Math.min(30,Math.max(1,Number($('mCount').value)||10)),minutes=Math.max(1,Number($('mTime').value)||15);currentTest={subject,total:count,questions:makeQuestions(subject,count),started:Date.now(),limit:minutes*60};qIndex=0;answers={};clearInterval(testTimer);renderTest();let left=currentTest.limit;testTimer=setInterval(()=>{left--;if(left<=0){clearInterval(testTimer);finishTest()}else if($('testTimer'))$('testTimer').textContent=format(left)},1000)}
+function format(n){return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')}
+function renderTest(){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));let q=currentTest.questions[qIndex];$('pages').innerHTML=page('test','Mock Test',`${currentTest.subject} • Question ${qIndex+1} of ${currentTest.total}`,`<div class="card test"><div class="testhead"><b>Question ${qIndex+1}</b><div class="timer" id="testTimer">${format(Math.max(0,Math.floor((currentTest.limit-(Date.now()-currentTest.started)/1000))))}</div></div><div class="question">${esc(q.q)}</div><div class="options">${q.options.map((o,i)=>`<button class="option ${answers[qIndex]===i?'selected':''}" onclick="pick(${i})">${String.fromCharCode(65+i)}. ${esc(o)}</button>`).join('')}</div><div class="footer"><button class="btn secondary" onclick="${qIndex?'prevQ()':'show(\'dashboard\')'}">${qIndex?'← Previous':'Exit'}</button><button class="btn" onclick="${qIndex===currentTest.total-1?'finishTest()':'nextQ()'}">${qIndex===currentTest.total-1?'Submit Test':'Next →'}</button></div></div>`);show('test')}
+function pick(i){answers[qIndex]=i;renderTest()}
+function nextQ(){if(qIndex<currentTest.total-1){qIndex++;renderTest()}}function prevQ(){if(qIndex>0){qIndex--;renderTest()}}
+function finishTest(){if(!currentTest)return;clearInterval(testTimer);let correct=currentTest.questions.reduce((n,q,i)=>n+(answers[i]===q.answer?1:0),0),percent=Math.round(correct/currentTest.total*100),time=Math.round((Date.now()-currentTest.started)/1000);tests.push({date:new Date().toISOString(),subject:currentTest.subject,score:correct,total:currentTest.total,percent,time});save();$('pages').innerHTML=page('result','Test Result','Here is your performance analysis.',`<div class="card center"><div class="score">${percent}%</div><p>${correct} correct • ${currentTest.total-correct} incorrect</p><p class="muted">Time taken: ${format(time)}</p><div class="actions" style="justify-content:center"><button class="btn" onclick="show('tests')">View History</button><button class="btn secondary" onclick="show('mock')">New Test</button></div></div>`);show('result');currentTest=null}
+render();
