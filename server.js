@@ -3,7 +3,24 @@ const ROOT=__dirname,PORT=process.env.PORT||4173,KEY=process.env.GEMINI_API_KEY,
 const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8'};
 function send(res,status,data,type='application/json'){res.writeHead(status,{'Content-Type':type,'Access-Control-Allow-Origin':'*','Cache-Control':'no-store'});res.end(type.startsWith('application/json')?JSON.stringify(data):data)}
 function body(req){return new Promise((ok,bad)=>{let d='',size=0;req.on('data',c=>{size+=c.length;if(size>25000000){req.destroy();bad(Object.assign(new Error('Request too large. Please use an image/PDF under about 15 MB.'),{statusCode:413}));return}d+=c});req.on('end',()=>ok(d));req.on('error',bad)})}
-const system='You are Discipline AI Tutor for a Class 12 Bihar Board Science student. Help with Physics, Chemistry and Mathematics. Use easy Hinglish when the student writes Hindi/Hinglish. Explain concepts clearly, formulas and simple examples when useful. For MCQs, show options and check answers carefully. Never claim verification you did not do. Remember relevant learning context from the conversation history supplied by the app. Keep answers focused on learning.';
+const system=`You are Discipline AI Tutor for Md Sajid Khan.
+Student profile:
+- Name: Md Sajid Khan
+- Age: 18 years
+- Education: Class 12 Science student
+- Board: Bihar Board
+- Medium: English Medium
+- Subjects: Science stream — Physics, Chemistry, Mathematics and related subjects
+- Current focus: Class 12 board exam preparation while learning AI and technology skills
+- AI interest: AI tools, prompting, and building AI-based websites/tools
+- Current project: building an AI study website/tool containing Class 12 Science data and mock tests
+- Coding interest: learning coding/website development with AI and working with APIs in websites
+- Study style: prefers easy Hindi-English mix (Hinglish), easy definitions, clear explanations, important formulas, simple examples, MCQs/quizzes, revision and mistake analysis
+- Physics: takes quiz accuracy seriously and prefers testing based on questions he provides
+- Chemistry: prefers simple, memorable definitions + formulas + examples
+- English Grammar: prefers structured multi-day study plans
+- Goal: perform well in Class 12 while developing practical AI + technology skills and building useful projects
+Use this context when relevant. Do not unnecessarily repeat personal details. Help with Physics, Chemistry and Mathematics. Use easy Hinglish when the student writes Hindi/Hinglish. Explain concepts clearly, formulas and simple examples when useful. For MCQs, show options and check answers carefully. Never claim verification you did not do. Remember relevant learning context from the conversation history supplied by the app. Keep answers focused on learning.`;
 function partsFromHistory(messages){const out=[];for(const m of Array.isArray(messages)?messages.slice(-24):[]){if((m.role==='user'||m.role==='assistant')&&m.content)out.push({role:m.role==='assistant'?'model':'user',parts:[{text:String(m.content).slice(0,8000)}]})}return out}
 async function gemini(contents,config={}){if(!KEY)throw Object.assign(new Error('GEMINI_API_KEY is not configured on the server.'),{statusCode:503});const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(MODEL)}:generateContent`,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':KEY},body:JSON.stringify({contents,...config})});const d=await r.json();if(!r.ok)throw Object.assign(new Error(d?.error?.message||'Gemini request failed'),{statusCode:r.status});return d}
 async function chat(messages,attachment){const contents=[{role:'user',parts:[{text:system}]} ,...partsFromHistory(messages)];if(attachment?.data&&attachment?.mimeType){contents.push({role:'user',parts:[{text:'Student attached a file. Read it and answer the student request using the attachment.'},{inlineData:{mimeType:attachment.mimeType,data:attachment.data}}]})}const d=await gemini(contents,{generationConfig:{temperature:.4,maxOutputTokens:1800}});const reply=(d.candidates||[]).flatMap(c=>c.content?.parts||[]).map(p=>p.text||'').join('').trim();if(!reply)throw Object.assign(new Error('AI returned an empty response.'),{statusCode:502});return reply}
