@@ -1,0 +1,47 @@
+(()=>{
+const ROUTINE_KEY='discipline_ai_day_routine_v1';
+const todayKey=()=>{const d=new Date();return d.toISOString().slice(0,10)};
+const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+const defaults=[
+ {id:'morning',time:'06:00',task:'Morning Revision',subject:'Physics',mins:60},
+ {id:'chemistry',time:'08:00',task:'Chemistry Study',subject:'Chemistry',mins:60},
+ {id:'maths',time:'10:00',task:'Mathematics Practice',subject:'Mathematics',mins:90},
+ {id:'pyq',time:'14:00',task:'PYQ Test / Practice',subject:'PYQ',mins:60},
+ {id:'wrong',time:'17:00',task:'Wrong Questions Revision',subject:'Revision',mins:45},
+ {id:'ai',time:'19:00',task:'AI / Coding Skill',subject:'Skills',mins:45},
+ {id:'night',time:'21:00',task:'Daily Revision & Mistake Review',subject:'Revision',mins:45}
+];
+function load(){try{const x=JSON.parse(localStorage.getItem(ROUTINE_KEY)||'null');return x&&Array.isArray(x.items)?x:{items:defaults,done:{}}}catch{return {items:defaults,done:{}}}}
+function save(x){localStorage.setItem(ROUTINE_KEY,JSON.stringify(x))}
+function getTests(){try{return JSON.parse(localStorage.getItem('discipline_ai_tests_v4')||'[]')}catch{return []}}
+function getState(){const x=load();x.done=x.done||{};x.done[todayKey()]=x.done[todayKey()]||{};return x}
+function routinePage(){
+ const x=getState(),key=todayKey(),items=x.items;
+ const done=items.filter(i=>x.done[key]?.[i.id]).length,total=items.length,pct=total?Math.round(done/total*100):0;
+ const dayTests=getTests().filter(t=>String(t.date||'').slice(0,10)===key);
+ const testCount=dayTests.length,avg=testCount?Math.round(dayTests.reduce((a,t)=>a+(Number(t.percent)||0),0)/testCount):0;
+ const mins=items.filter(i=>x.done[key]?.[i.id]).reduce((a,i)=>a+(Number(i.mins)||0),0);
+ const rows=items.map((i,n)=>`<div class="routine-item ${x.done[key]?.[i.id]?'done':''}"><label class="routine-check"><input type="checkbox" data-routine="${esc(i.id)}" ${x.done[key]?.[i.id]?'checked':''}><span></span></label><div class="routine-time">${esc(i.time)}</div><div class="routine-info"><b>${esc(i.task)}</b><small>${esc(i.subject)} • ${Number(i.mins)||0} min</small></div></div>`).join('');
+ return page('My Day Routine','Aaj ka complete study plan, task completion aur full-day progress ek jagah.',`<div class="routine-hero card"><div><div class="eyebrow">${key}</div><h2 style="margin:4px 0">Today’s progress</h2><p class="muted">Routine complete karte jao — progress automatically save hoti rahegi.</p></div><div class="routine-circle" style="--routine-p:${pct}%"><strong>${pct}%</strong><span>Routine</span></div></div><div class="grid stats routine-stats"><div class="card stat"><span>Tasks Done</span><b>${done}/${total}</b></div><div class="card stat"><span>Study Planned Done</span><b>${mins} min</b></div><div class="card stat"><span>Tests Today</span><b>${testCount}</b></div><div class="card stat"><span>Test Average</span><b>${avg}%</b></div></div><div class="card"><div class="section"><div><h3>📅 Today’s Schedule</h3><p class="muted" style="margin:3px 0">Har task complete hone par tick karo.</p></div><button type="button" class="btn secondary" id="editRoutine">✏️ Edit Routine</button></div><div class="routine-list">${rows||'<div class="empty">Routine empty hai. Edit Routine se task add karo.</div>'}</div></div><div class="card routine-summary"><h3>📊 Full Day Progress</h3><div class="progress"><i style="width:${pct}%"></i></div><p><b>${done}</b> of <b>${total}</b> routine tasks completed • <b>${mins} min</b> marked study • <b>${testCount}</b> tests attempted today.</p>${pct===100?'<div class="success-box">🔥 Great! Aaj ka routine complete ho gaya.</div>':'<div class="muted">🎯 Next focus: remaining routine tasks complete karo.</div>'}</div>`)
+}
+function bindRoutine(){
+ const x=getState(),key=todayKey();
+ document.querySelectorAll('[data-routine]').forEach(cb=>cb.addEventListener('change',()=>{x.done[key]=x.done[key]||{};if(cb.checked)x.done[key][cb.dataset.routine]=true;else delete x.done[key][cb.dataset.routine];save(x);show('routine')}));
+ document.getElementById('editRoutine')?.addEventListener('click',openEditor);
+}
+function openEditor(){
+ const old=document.getElementById('routineEditor');if(old)old.remove();const x=getState();
+ const modal=document.createElement('div');modal.id='routineEditor';modal.className='routine-modal';
+ modal.innerHTML=`<div class="routine-modal-box"><div class="section"><div><h2 style="margin:0">✏️ Set My Day Routine</h2><p class="muted">Time, task, subject aur duration apne hisaab se set karo.</p></div><button type="button" class="btn ghost" id="closeRoutine">✕</button></div><div id="routineEditRows">${x.items.map((i,n)=>editRow(i,n)).join('')}</div><div class="actions"><button type="button" class="btn secondary" id="addRoutine">＋ Add Task</button><button type="button" class="btn" id="saveRoutine">💾 Save Routine</button></div></div>`;
+ document.body.appendChild(modal);modal.querySelector('#closeRoutine').onclick=()=>modal.remove();modal.querySelector('#addRoutine').onclick=()=>{const c=modal.querySelector('#routineEditRows');c.insertAdjacentHTML('beforeend',editRow({id:'r'+Date.now(),time:'20:00',task:'New Task',subject:'Study',mins:30},c.children.length));};
+ modal.querySelector('#saveRoutine').onclick=()=>{const items=[...modal.querySelectorAll('.routine-edit-row')].map(r=>({id:r.dataset.id||'r'+Math.random().toString(36).slice(2),time:r.querySelector('.rt-time').value||'00:00',task:r.querySelector('.rt-task').value.trim()||'Study Task',subject:r.querySelector('.rt-sub').value.trim()||'Study',mins:Math.max(1,Number(r.querySelector('.rt-mins').value)||30)}));x.items=items;save(x);modal.remove();show('routine');toast('Daily routine saved. ✅')};
+ modal.querySelectorAll('.rt-del').forEach(b=>b.onclick=()=>b.closest('.routine-edit-row').remove());
+}
+function editRow(i){return `<div class="routine-edit-row" data-id="${esc(i.id)}"><input class="input rt-time" type="time" value="${esc(i.time)}"><input class="input rt-task" value="${esc(i.task)}"><input class="input rt-sub" value="${esc(i.subject)}"><input class="input rt-mins" type="number" min="1" max="600" value="${Number(i.mins)||30}"><button type="button" class="btn ghost rt-del">🗑️</button></div>`}
+const style=document.createElement('style');style.textContent=`.routine-hero{display:flex;justify-content:space-between;align-items:center;gap:18px;background:linear-gradient(135deg,#111a31,#0b1221)}.routine-circle{width:120px;height:120px;min-width:120px;border-radius:50%;display:grid;place-items:center;position:relative;background:conic-gradient(var(--p) var(--routine-p),#27314a 0)}.routine-circle:after{content:'';position:absolute;inset:9px;border-radius:50%;background:#0c1425}.routine-circle strong,.routine-circle span{position:relative;z-index:1}.routine-circle strong{font-size:28px}.routine-circle span{font-size:10px;color:var(--muted);margin-top:34px;position:absolute}.routine-list{display:grid;gap:8px}.routine-item{display:grid;grid-template-columns:30px 70px 1fr;align-items:center;gap:8px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02)}.routine-item.done{opacity:.65}.routine-item.done .routine-info b{text-decoration:line-through}.routine-check input{display:none}.routine-check span{display:block;width:20px;height:20px;border:2px solid #68738d;border-radius:6px}.routine-check input:checked+span{background:var(--p);border-color:var(--p);position:relative}.routine-check input:checked+span:after{content:'✓';position:absolute;left:3px;top:-3px;font-weight:900}.routine-time{font-weight:800}.routine-info small{display:block;color:var(--muted);margin-top:3px}.success-box{margin-top:10px;padding:10px;border-radius:10px;background:rgba(36,209,139,.1)}.routine-modal{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10000;display:flex;align-items:center;justify-content:center;padding:15px}.routine-modal-box{width:min(900px,100%);max-height:90vh;overflow:auto;background:#0c1425;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:18px}.routine-edit-row{display:grid;grid-template-columns:110px 1.5fr 1fr 90px 45px;gap:7px;margin-bottom:8px}.routine-stats{margin-bottom:15px}@media(max-width:650px){.routine-hero{align-items:flex-start}.routine-circle{width:95px;height:95px;min-width:95px}.routine-edit-row{grid-template-columns:1fr 1fr}.routine-edit-row .rt-task{grid-column:span 2}.routine-edit-row .rt-sub{grid-column:span 1}}`;document.head.appendChild(style);
+const oldLayout=typeof layout==='function'?layout:null;
+if(oldLayout){layout=function(){const h=oldLayout();return h.replace("['dashboard','🏠','Dashboard'],","['dashboard','🏠','Dashboard'],['routine','📅','My Day Routine'],")}}
+const oldShow=typeof show==='function'?show:null;
+if(oldShow){show=function(id){if(id==='routine'){const pages=document.getElementById('pages');if(pages){pages.innerHTML=routinePage();bindRoutine();}return}return oldShow(id)}}
+setTimeout(()=>{if(document.getElementById('root')&&typeof render==='function'){try{render()}catch{}}},100);
+})();
