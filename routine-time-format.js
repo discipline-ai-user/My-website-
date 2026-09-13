@@ -3,12 +3,12 @@
   function formatTime(t){
     const p=String(t).split(':');
     const h=Number(p[0]);
-    return (h>=13&&h<=15?String(h-12):p[0])+':'+p[1];
+    return (h>=13&&h<=18?String(h-12):p[0])+':'+p[1];
   }
   function fix(){
     document.querySelectorAll('.mdr-time').forEach(el=>{
       const old=el.textContent;
-      const next=old.replace(/\b(13|14|15):(\d{2})\b/g,(_,h,m)=>formatTime(h+':'+m));
+      const next=old.replace(/\b(13|14|15|16|17|18):(\d{2})\b/g,(_,h,m)=>formatTime(h+':'+m));
       if(next!==old) el.textContent=next;
     });
   }
