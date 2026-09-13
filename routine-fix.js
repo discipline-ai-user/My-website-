@@ -1,31 +1,35 @@
 (()=>{'use strict';
-function openRoutineNow(){
-  try{
-    if(typeof window.openRoutine==='function'){
-      const ok=window.openRoutine();
-      if(ok!==false){document.querySelectorAll('[data-page="routine"]').forEach(b=>b.blur());document.getElementById('side')?.classList.remove('open');return true;}
-    }
-    if(typeof window.show==='function'){
-      window.show('routine');
-      return true;
-    }
-  }catch(e){console.error('Daily Study Routine open error:',e)}
+function openRoutineDirect(e){
+  if(e){e.preventDefault();e.stopImmediatePropagation();e.stopPropagation();}
+  const fn=window.openRoutine;
+  if(typeof fn==='function'){fn();return false;}
+  if(typeof window.show==='function'){window.show('routine');return false;}
   return false;
 }
-function handle(e){
-  const b=e.target?.closest?.('[data-page="routine"]');
-  if(!b)return;
-  e.preventDefault();e.stopPropagation();
-  openRoutineNow();
-}
 function wire(){
-  document.querySelectorAll('[data-page="routine"]').forEach(b=>{
+  document.querySelectorAll('[data-page="routine"], [data-routine-open="1"]').forEach(b=>{
+    // Do not let app.js treat Routine as a normal page route.
+    b.removeAttribute('data-page');
+    b.setAttribute('data-routine-open','1');
+    b.type='button';
     b.style.cursor='pointer';
-    b.setAttribute('role','button');
-    b.onclick=e=>{e.preventDefault();e.stopPropagation();openRoutineNow()};
+    b.onclick=openRoutineDirect;
+    b.ontouchend=openRoutineDirect;
+    b.onpointerup=openRoutineDirect;
   });
 }
-['click','pointerup','touchend'].forEach(type=>document.addEventListener(type,handle,true));
-wire();
-new MutationObserver(wire).observe(document.body,{childList:true,subtree:true});
+function start(){
+  wire();
+  document.addEventListener('click',e=>{
+    const b=e.target.closest?.('[data-routine-open="1"]');
+    if(b)openRoutineDirect(e);
+  },true);
+  document.addEventListener('touchend',e=>{
+    const b=e.target.closest?.('[data-routine-open="1"]');
+    if(b)openRoutineDirect(e);
+  },true);
+  new MutationObserver(wire).observe(document.body,{childList:true,subtree:true});
+  setInterval(wire,500);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
