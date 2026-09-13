@@ -24,11 +24,24 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         status = findViewById(R.id.status)
         tts = TextToSpeech(this, this)
         findViewById<Button>(R.id.mic).setOnClickListener { listen() }
+
+        // Jarvis needs only microphone permission for voice commands.
+        // Android itself shows the permission dialog; the app cannot grant it silently.
+        requestMicrophoneIfNeeded()
+    }
+
+    private fun requestMicrophoneIfNeeded() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            status.text = "🎙️ Microphone ready. Jarvis is ready for voice commands."
+            return
+        }
+        status.text = "🎙️ Voice commands ke liye microphone permission required hai."
+        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), voiceRequest)
     }
 
     private fun listen() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), voiceRequest)
+            requestMicrophoneIfNeeded()
             return
         }
         val i = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -37,6 +50,17 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             putExtra(RecognizerIntent.EXTRA_PROMPT, "Jarvis ko command boliye")
         }
         startActivityForResult(i, voiceRequest)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != voiceRequest) return
+        if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
+            status.text = "✅ Microphone permission mil gaya. Jarvis ready hai."
+            reply("Microphone permission mil gaya. Jarvis ready hai.")
+        } else {
+            status.text = "⚠️ Microphone permission nahi mila. Voice commands ke liye Settings se permission allow karein."
+        }
     }
 
     @Deprecated("Android callback API")
