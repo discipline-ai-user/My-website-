@@ -24,9 +24,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         status = findViewById(R.id.status)
         tts = TextToSpeech(this, this)
         findViewById<Button>(R.id.mic).setOnClickListener { listen() }
-
-        // Jarvis needs only microphone permission for voice commands.
-        // Android itself shows the permission dialog; the app cannot grant it silently.
         requestMicrophoneIfNeeded()
     }
 
@@ -72,16 +69,28 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun handleCommand(command: String) {
-        val q = command.lowercase(Locale.ROOT)
+        val q = command.lowercase(Locale.ROOT).trim()
         val blocked = Regex("bank|banking|phonepe|phone pe|upi|paytm|gpay|google pay|payment|password|passcode|pin|otp|cvv|transaction")
         if (blocked.containsMatchIn(q)) {
             reply("Maaf kijiye, banking, UPI, payment, password, PIN aur OTP actions allowed nahi hain.")
             return
         }
+
         status.text = command
+        val youtube = q.contains("youtube") || q.contains("यूट्यूब") || q.contains("यू ट्यूब")
+        val openWords = q.contains("open") || q.contains("on") || q.contains("start") || q.contains("khol") || q.contains("kholo") || q.contains("chala") || q.contains("chalao") || q.contains("करो") || q.contains("खोल") || q.contains("चालू")
+
         when {
-            q.contains("youtube") -> openUrl("https://www.youtube.com/results?search_query=" + java.net.URLEncoder.encode(command, "UTF-8"), "YouTube search khol raha hoon.")
-            q.contains("study website") || q.contains("preparation website") -> openUrl("https://my-website-h5fw.onrender.com", "Aapki study website khol raha hoon.")
+            youtube && openWords -> {
+                val direct = packageManager.getLaunchIntentForPackage("com.google.android.youtube")
+                if (direct != null && !q.contains("class") && !q.contains("lecture") && !q.contains("sir") && !q.contains("video") && !q.contains("पढ़") && !q.contains("क्लास")) {
+                    startActivity(direct)
+                    reply("Bilkul Sir, YouTube khol raha hoon.")
+                } else {
+                    openUrl("https://www.youtube.com/results?search_query=" + java.net.URLEncoder.encode(command, "UTF-8"), "Bilkul Sir, YouTube par search khol raha hoon.")
+                }
+            }
+            q.contains("study website") || q.contains("preparation website") || q.contains("study web") -> openUrl("https://my-website-h5fw.onrender.com", "Aapki study website khol raha hoon.")
             q.contains("whatsapp") -> openApp("com.whatsapp", "WhatsApp khol raha hoon.")
             q.contains("chrome") || q.contains("browser") -> openUrl("https://www.google.com", "Browser khol raha hoon.")
             else -> reply("Command samajh gaya, lekin ye action abhi Jarvis mein available nahi hai.")
