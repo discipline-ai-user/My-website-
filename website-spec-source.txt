@@ -1,0 +1,16 @@
+SOURCE SPECIFICATION: Complete_Website_Feature_Analysis_Current_and_Previous.pdf
+
+This file records the requested product scope from the supplied PDF so implementation can be traced to the source specification.
+
+Core final product structure:
+1) PYQ Test — upload → AI extract → MCQ test → result → AI analysis.
+2) Daily Study Routine — schedule → live block → completion → date history.
+3) Optional future analytics after the first two flows are stable.
+
+Current PYQ features: subject/chapter selection; PYQ photo/PDF upload; manual question input; AI extraction preserving supplied wording; configurable 1–180 minute timer; question counts All/10/20/30/50/100; browser localStorage saved PYQs; one-question-at-a-time MCQ engine with Previous/Next/Submit; result percentage/score/submit-or-timeout state; AI analysis with score summary, weak concepts from supplied test data, revision question numbers, and 3-step improvement plan.
+
+Daily Study Routine: full schedule; live/upcoming/expired block states; scheduled checkbox; daily progress; last 31 dates of history.
+
+Subject coverage from the specification: Physics, Chemistry and Mathematics chapters listed in the PDF.
+
+Known development lessons: navigation should have one source of truth; preserve the stable app shell; run startup/syntax checks; clear/version stale service-worker caches when needed; verify live Render deployment separately from GitHub.
