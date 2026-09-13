@@ -1,0 +1,85 @@
+package com.sajid.jarvis
+
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Bundle
+import android.speech.RecognizerIntent
+import android.speech.tts.TextToSpeech
+import android.widget.Button
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import java.util.Locale
+
+class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
+    private lateinit var status: TextView
+    private lateinit var tts: TextToSpeech
+    private val voiceRequest = 101
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        status = findViewById(R.id.status)
+        tts = TextToSpeech(this, this)
+        findViewById<Button>(R.id.mic).setOnClickListener { listen() }
+    }
+
+    private fun listen() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), voiceRequest)
+            return
+        }
+        val i = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN")
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "hi-IN")
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Jarvis ko command boliye")
+        }
+        startActivityForResult(i, voiceRequest)
+    }
+
+    @Deprecated("Android callback API")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != voiceRequest || resultCode != RESULT_OK) return
+        val command = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull().orEmpty()
+        handleCommand(command)
+    }
+
+    private fun handleCommand(command: String) {
+        val q = command.lowercase(Locale.ROOT)
+        val blocked = Regex("bank|banking|phonepe|phone pe|upi|paytm|gpay|google pay|payment|password|passcode|pin|otp|cvv|transaction")
+        if (blocked.containsMatchIn(q)) {
+            reply("Maaf kijiye, banking, UPI, payment, password, PIN aur OTP actions allowed nahi hain.")
+            return
+        }
+        status.text = command
+        when {
+            q.contains("youtube") -> openUrl("https://www.youtube.com/results?search_query=" + java.net.URLEncoder.encode(command, "UTF-8"), "YouTube search khol raha hoon.")
+            q.contains("study website") || q.contains("preparation website") -> openUrl("https://my-website-h5fw.onrender.com", "Aapki study website khol raha hoon.")
+            q.contains("whatsapp") -> openApp("com.whatsapp", "WhatsApp khol raha hoon.")
+            q.contains("chrome") || q.contains("browser") -> openUrl("https://www.google.com", "Browser khol raha hoon.")
+            else -> reply("Command samajh gaya, lekin ye action abhi Jarvis mein available nahi hai.")
+        }
+    }
+
+    private fun openUrl(url: String, message: String) {
+        startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)))
+        reply(message)
+    }
+
+    private fun openApp(pkg: String, message: String) {
+        val intent = packageManager.getLaunchIntentForPackage(pkg)
+        if (intent != null) startActivity(intent) else reply("Ye app phone mein nahi mili.")
+        if (intent != null) reply(message)
+    }
+
+    private fun reply(message: String) {
+        status.text = message
+        if (::tts.isInitialized) tts.speak(message, TextToSpeech.QUEUE_FLUSH, null, "jarvis")
+    }
+
+    override fun onInit(statusCode: Int) { tts.language = Locale("hi", "IN") }
+    override fun onDestroy() { tts.shutdown(); super.onDestroy() }
+}
