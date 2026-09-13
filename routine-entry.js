@@ -1,4 +1,10 @@
 (()=>{'use strict';
+function open(){
+  if(typeof window.openRoutine==='function')return window.openRoutine();
+  const b=document.querySelector('[data-page="routine"]');
+  if(b&&b!==document.activeElement){b.click();return true}
+  return false;
+}
 function add(){
   const n=document.querySelector('.nav');
   if(n){
@@ -8,9 +14,9 @@ function add(){
       b.type='button';
       b.dataset.page='routine';
       b.innerHTML='📅&nbsp; Daily Study Routine';
-      b.onclick=()=>window.show?.('routine');
+      b.onclick=open;
       n.appendChild(b);
-    }
+    }else b.onclick=open;
   }
   const q=document.getElementById('routineQuickOpen');
   if(q)q.remove();
