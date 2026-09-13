@@ -1,4 +1,4 @@
-const CACHE='discipline-cache-v40';
+const CACHE='discipline-cache-v41';
 const ASSETS=['/','/index.html','/boot-debug.js','/app.js','/style.css','/ai-chat.js','/ai-section.js','/syllabus-pyq.js','/pyq-routing.js','/pyq-filter-fix.js','/enhancements.js','/pyq-persistence.js','/home-intro.js','/result-ui.js','/chapter-history.js','/pyq-year-display.js','/wrong-only-fix.js','/day-routine.js','/syllabus-pyq-manager.js','/wrong-only-v2.js','/objective-test-manager.js','/hide-pyq-menu.js','/jarvis-assistant.js','/routine-entry.js','/routine-fix.js','/manifest.json','/icon.svg'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
