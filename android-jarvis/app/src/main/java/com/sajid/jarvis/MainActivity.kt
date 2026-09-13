@@ -46,11 +46,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "hi-IN")
             putExtra(RecognizerIntent.EXTRA_PROMPT, "Jarvis ko poora command boliye...")
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
-            // Give the user more time to finish a natural, longer command.
-            putExtra("android.speech.extra.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 2500L)
-            putExtra("android.speech.extra.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 1800L)
-            putExtra("android.speech.extra.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 12000L)
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 10)
+            putExtra("android.speech.extra.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 3500L)
+            putExtra("android.speech.extra.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 2500L)
+            putExtra("android.speech.extra.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 15000L)
         }
         startActivityForResult(intent, voiceRequest)
     }
@@ -77,31 +76,39 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun handleCommand(command: String) {
         val q = command.lowercase(Locale.ROOT).trim()
+        status.text = "🗣️ $command"
+
         val blocked = Regex("bank|banking|phonepe|phone pe|upi|paytm|gpay|google pay|payment|password|passcode|pin|otp|cvv|transaction")
         if (blocked.containsMatchIn(q)) {
             reply("Maaf kijiye, banking, UPI, payment, password, PIN aur OTP actions allowed nahi hain.")
             return
         }
 
-        status.text = "🗣️ $command"
+        // YouTube is intentionally recognized on its own. Natural commands such as
+        // “YouTube on karo”, “YouTube kholo”, or Hindi “यूट्यूब चालू करो” should not
+        // depend on a separate open-word match.
         val youtube = q.contains("youtube") || q.contains("यूट्यूब") || q.contains("यू ट्यूब")
-        val openWords = q.contains("open") || q.contains("on") || q.contains("start") || q.contains("khol") || q.contains("kholo") || q.contains("chala") || q.contains("chalao") || q.contains("करो") || q.contains("खोल") || q.contains("चालू")
-
-        when {
-            youtube && openWords -> {
+        if (youtube) {
+            val asksForClass = q.contains("class") || q.contains("lecture") || q.contains("sir") || q.contains("video") || q.contains("physics") || q.contains("chemistry") || q.contains("math") || q.contains("पढ़") || q.contains("क्लास") || q.contains("लेक्चर") || q.contains("वीडियो")
+            if (asksForClass) {
+                openUrl("https://www.youtube.com/results?search_query=" + java.net.URLEncoder.encode(command, "UTF-8"), "Bilkul Sir, YouTube par search khol raha hoon.")
+            } else {
                 val direct = packageManager.getLaunchIntentForPackage("com.google.android.youtube")
-                val asksForClass = q.contains("class") || q.contains("lecture") || q.contains("sir") || q.contains("video") || q.contains("पढ़") || q.contains("क्लास") || q.contains("लेक्चर")
-                if (direct != null && !asksForClass) {
+                if (direct != null) {
                     startActivity(direct)
                     reply("Bilkul Sir, YouTube khol raha hoon.")
                 } else {
-                    openUrl("https://www.youtube.com/results?search_query=" + java.net.URLEncoder.encode(command, "UTF-8"), "Bilkul Sir, YouTube par search khol raha hoon.")
+                    openUrl("https://www.youtube.com", "Bilkul Sir, YouTube khol raha hoon.")
                 }
             }
-            q.contains("study website") || q.contains("preparation website") || q.contains("study web") -> openUrl("https://my-website-h5fw.onrender.com", "Aapki study website khol raha hoon.")
-            q.contains("whatsapp") -> openApp("com.whatsapp", "WhatsApp khol raha hoon.")
-            q.contains("chrome") || q.contains("browser") -> openUrl("https://www.google.com", "Browser khol raha hoon.")
-            else -> reply("Command samajh gaya, lekin ye action abhi Jarvis mein available nahi hai.")
+            return
+        }
+
+        when {
+            q.contains("study website") || q.contains("preparation website") || q.contains("study web") || q.contains("मेरी वेबसाइट") || q.contains("स्टडी वेबसाइट") -> openUrl("https://my-website-h5fw.onrender.com", "Aapki study website khol raha hoon.")
+            q.contains("whatsapp") || q.contains("व्हाट्सऐप") || q.contains("व्हाट्सएप") -> openApp("com.whatsapp", "WhatsApp khol raha hoon.")
+            q.contains("chrome") || q.contains("browser") || q.contains("ब्राउज़र") -> openUrl("https://www.google.com", "Browser khol raha hoon.")
+            else -> reply("Command samajh gaya. Ye action abhi available nahi hai.")
         }
     }
 
