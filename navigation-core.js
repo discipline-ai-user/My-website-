@@ -8,22 +8,19 @@
 
   function navigate(id){
     if(!id) return false;
-    var fn=window.show;
+    var fn=null;
+    try{ if(typeof window.show==='function') fn=window.show; }catch(e){}
+    if(!fn){
+      try{ if(typeof show==='function') fn=show; }catch(e){}
+    }
     if(typeof fn!=='function') return false;
     try{
       fn(id);
       closeMenu();
       return true;
     }catch(e){
-      try{
-        if(typeof show==='function'){
-          show(id);
-          closeMenu();
-          return true;
-        }
-      }catch(ignore){}
+      return false;
     }
-    return false;
   }
 
   function menuToggle(){
@@ -47,7 +44,6 @@
 
       var button=target.closest ? target.closest('[data-page]') : null;
       if(!button) return;
-
       var id=button.getAttribute('data-page');
       if(!id) return;
 
