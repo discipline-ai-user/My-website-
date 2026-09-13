@@ -7,7 +7,9 @@
   }
   function fix(){
     document.querySelectorAll('.mdr-time').forEach(el=>{
-      el.textContent=el.textContent.replace(/\b(13|14|15):(\d{2})\b/g,(_,h,m)=>formatTime(h+':'+m));
+      const old=el.textContent;
+      const next=old.replace(/\b(13|14|15):(\d{2})\b/g,(_,h,m)=>formatTime(h+':'+m));
+      if(next!==old) el.textContent=next;
     });
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fix);else fix();
