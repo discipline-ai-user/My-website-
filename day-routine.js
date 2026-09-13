@@ -63,7 +63,7 @@
   function render(){
     var x=load(), k=dateKey(), done=getDayDone(x,k), s=stats(x,k), html='';
     record(x,k); save(x);
-    html+='<div class="routine-hero card"><div><div class="eyebrow">'+escapeHtml(pretty(k))+'</div><h2 style="margin:4px 0">📅 My Daily Study Routine</h2><p class="muted">🕒 <b>Live time: '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+'</b></p><p class="muted">⏱️ Checkbox sirf scheduled time ke andar active rahega.</p></div><div class="routine-circle"><strong>'+s.pct+'%</strong><span>Today</span></div></div>';
+    html+='<div class="routine-hero card"><div><div class="eyebrow">'+escapeHtml(pretty(k))+'</div><h2 style="margin:4px 0">📅 Daily Study Routine</h2><p class="muted">🕒 <b>Live time: '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+'</b></p><p class="muted">⏱️ Checkbox sirf scheduled time ke andar active rahega.</p></div><div class="routine-circle"><strong>'+s.pct+'%</strong><span>Today</span></div></div>';
     html+='<div class="grid stats routine-stats"><div class="card stat"><span>Study Blocks</span><b>'+s.done+'/'+s.total+'</b></div><div class="card stat"><span>Study Completed</span><b>'+s.study+' min</b></div><div class="card stat"><span>Planned Study</span><b>'+s.planned+' min</b></div></div>';
     html+='<div class="card"><div class="section"><div><h3>📅 Today\'s Schedule</h3><p class="muted">🟢 Live = active • 🔒 Not started • ⏰ Time over</p></div></div><div class="routine-list">';
     x.items.forEach(function(i){
@@ -78,7 +78,7 @@
   function openRoutine(){
     var p=document.getElementById('pages');
     if(!p) return false;
-    p.innerHTML=page('My Day Routine','Real-time routine • checkbox sirf scheduled time ke andar active rahega.',render());
+    p.innerHTML=page('Daily Study Routine','Real-time routine • checkbox sirf scheduled time ke andar active rahega.',render());
     bind();
     return true;
   }
@@ -103,7 +103,7 @@
     var nav=document.querySelector('.nav');
     if(!nav || nav.querySelector('[data-routine-open="1"]')) return;
     var b=document.createElement('button');
-    b.type='button'; b.dataset.routineOpen='1'; b.innerHTML='📅&nbsp; My Day Routine';
+    b.type='button'; b.dataset.routineOpen='1'; b.innerHTML='📅&nbsp; Daily Study Routine';
     b.onclick=function(e){e.preventDefault();e.stopPropagation();openRoutine();};
     nav.appendChild(b);
   }
