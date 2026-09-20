@@ -34,12 +34,13 @@ function classroomRoom(){
  const selected=rs.find(x=>String(x.uid||x.id)===String(first))||allRs[0];
  return `<section class="page active"><div class="cr-top"><div><button class="btn secondary" id="crBack">← ${esc(state.subject)}</button><h1 class="title" style="margin-top:10px">${esc(state.chapter)}</h1><p class="sub">🎥 ${lectures.length} lectures • 📄 ${notesRs.length} notes • 📝 ${dppPdf.length+dppVideo.length} DPP</p></div><div class="cr-xp">⚡ XP ${calcXP()}</div></div>
  <div class="card cr-banner">Study here. <b>Watch → Notes → DPP → Mark complete.</b> Tumhara chapter workspace isi page par rahega.</div>
- <div class="cr-subtabs">${[['all','All'],['lectures','Lectures'],['notes','Notes'],['dpps','DPPs'],['dpp-pdfs','DPP PDFs'],['dpp-videos','DPP Videos']].map(t=>`<button class="btn ${state.tab===t[0]?'active':''}" data-cr-tab="${t[0]}">${t[1]}</button>`).join('')}</div>
+ <div class="cr-room-actions"><div class="cr-room-action" data-cr-action="class"><b>🎥 Class Lecture</b><small>Video class yahin attend karo</small></div><div class="cr-room-action" data-cr-action="notes"><b>📝 Chapter Notes</b><small>Notes padho aur apne notes likho</small></div><div class="cr-room-action" data-cr-action="test"><b>🧠 Chapter Test</b><small>Isi chapter ka test do</small></div><div class="cr-room-action" data-cr-action="dpp"><b>📚 DPP Practice</b><small>DPP solve karo</small></div></div>
+ <div class="cr-subtabs">${[['all','All'],['lectures','Lectures'],['notes','Notes'],['dpps','DPPs'],['dpp-pdfs','DPP PDFs'],['dpp-videos','DPP Videos'],['test','Test']].map(t=>`<button class="btn ${state.tab===t[0]?'active':''}" data-cr-tab="${t[0]}">${t[1]}</button>`).join('')}</div>
  <div class="cr-actions" style="margin:8px 0 14px"><button class="btn" id="addMaterial">➕ Add Class Material</button><button class="btn secondary" id="openNotes">📝 My Notes</button></div>
  <div class="cr-room"><div class="cr-player">${viewer(selected)}</div><div class="card cr-list"><h3>${labelForTab(state.tab)}</h3>${allRs.length?allRs.map(x=>resourceRow(x,selected)).join(''):'<div class="cr-empty">Is tab me abhi material nahi hai.<br><br>Add Class Material se lecture/PDF/DPP add karo.</div>'}</div></div>
  <div id="crNoteBox"></div></section>`;
 }
-function labelForTab(t){return({all:'Class Material',lectures:'Lectures',notes:'Notes',dpps:'DPPs','dpp-pdfs':'DPP PDFs','dpp-videos':'DPP Videos'})[t]||'Class Material'}
+function labelForTab(t){return({all:'Class Material',lectures:'Lectures',notes:'Notes',dpps:'DPPs','dpp-pdfs':'DPP PDFs','dpp-videos':'DPP Videos',test:'Chapter Test'})[t]||'Class Material'}
 function resourceRow(x,sel){
  const k=kindOf(x),isDone=(done()[key(state.subject,state.chapter)]||{})[k==='dpp-pdf'||k==='dpp-video'?'dpp':'lecture']||0;
  return `<div class="cr-resource ${sel&&String(sel.uid||sel.id)===String(x.uid||x.id)?'active':''}"><div style="min-width:0"><b>${k==='lecture'?'🎥':k==='notes'?'📄':'📝'} ${esc(x.title||'Untitled')}</b><small>${esc(x.fileName||'')} ${x.duration?'• '+esc(x.duration):''}</small></div><div class="cr-actions"><button class="btn secondary cr-open" data-rid="${esc(x.uid||x.id)}">Open</button></div></div>`;
@@ -57,6 +58,7 @@ function viewer(x){
 function bindRoom(){
  document.getElementById('crBack')?.addEventListener('click',()=>openClassroom(state.subject));
  document.querySelectorAll('[data-cr-tab]').forEach(b=>b.onclick=()=>{state.tab=b.dataset.crTab;renderClassroom(document.getElementById('pages'))});
+ document.querySelectorAll('[data-cr-action]').forEach(b=>b.onclick=()=>{const a=b.dataset.crAction;if(a==='class'){state.tab='lectures';renderClassroom(document.getElementById('pages'));return}if(a==='notes'){showNotes();return}if(a==='dpp'){state.tab='dpps';renderClassroom(document.getElementById('pages'));return}if(a==='test'){if(typeof window.startQuestionTest==='function'){window.startQuestionTest(state.subject,state.chapter,10,15,'classroom')}else{alert('Test Center abhi load nahi hua. Page refresh karke try karo.')}}});
  document.querySelectorAll('.cr-open').forEach(b=>b.onclick=()=>{state.openResource=b.dataset.rid;renderClassroom(document.getElementById('pages'))});
  document.getElementById('crComplete')?.addEventListener('change',e=>markComplete(e.target.checked));
  document.getElementById('openNotes')?.addEventListener('click',()=>showNotes());
