@@ -2,7 +2,7 @@
 const DB='discipline_ai_study_library_v1',STORE='resources',NOTE_KEY='discipline_ai_class_notes_v1',DONE_KEY='discipline_ai_class_done_v1';
 const SUBJECTS=(window.DisciplineLibrary&&window.DisciplineLibrary.subjects)||{};
 const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-const ytId=url=>{try{const u=new URL(url);if(u.hostname.includes('youtu.be'))return u.pathname.slice(1).split('/')[0];if(u.searchParams.get('v'))return u.searchParams.get('v');const m=u.pathname.match(/\\/embed\\/([^/]+)/);if(m)return m[1];const live=u.pathname.match(/\\/live\\/([^/]+)/);if(live)return live[1];const shorts=u.pathname.match(/\\/shorts\\/([^/]+)/);return shorts?shorts[1]:''}catch{return''}};
+const ytId=url=>{try{const u=new URL(url);if(u.hostname.includes('youtu.be'))return u.pathname.slice(1).split('/')[0];if(u.searchParams.get('v'))return u.searchParams.get('v');const m=u.pathname.match(/\/embed\/([^/]+)/);if(m)return m[1];const live=u.pathname.match(/\/live\/([^/]+)/);if(live)return live[1];const shorts=u.pathname.match(/\/shorts\/([^/]+)/);return shorts?shorts[1]:''}catch{return''}};
 const openDB=()=>new Promise((res,rej)=>{const r=indexedDB.open(DB,1);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
 const all=async()=>{const db=await openDB();return new Promise((res,rej)=>{const q=db.transaction(STORE,'readonly').objectStore(STORE).getAll();q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})};
 const put=async x=>{const db=await openDB();return new Promise((res,rej)=>{const q=db.transaction(STORE,'readwrite').objectStore(STORE).add(x);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})};
