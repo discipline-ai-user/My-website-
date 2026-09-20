@@ -22,11 +22,11 @@ function css(){
 function dashboardCard(){
  const p=document.getElementById('pages');if(!p||document.getElementById('classroomCard'))return;
  const card=document.createElement('div');card.id='classroomCard';card.className='card classroom-wrap';
- card.innerHTML='<div class="cr-top"><div><h3>🎓 Study Classroom</h3><p class="muted">Lecture, PDF, notes, DPP aur progress — isi website ke andar.</p></div><button class="btn" id="openClassroomBtn">Open Classroom</button></div>';
+ card.innerHTML='<div class="cr-top"><div><h3>🎓 Study Classroom</h3><p class="muted">Lecture, PDF, notes, DPP aur progress — isi website ke andar.</p></div><button type="button" class="btn" id="openClassroomBtn">Open Classroom</button></div>';
  p.appendChild(card);document.getElementById('openClassroomBtn').onclick=()=>openClassroom();
 }
 async function openClassroom(subject=state.subject,chapter=''){
- state.subject=subject;state.chapter=chapter||((SUBJECTS[subject]||[])[0]||'');state.tab='all';state.openResource=null;
+ state.subject=subject;state.chapter=chapter||'';state.tab='all';state.openResource=null;
  const p=document.getElementById('pages');if(!p)return;css();
  try{items=await all()}catch(e){items=[]}
  renderClassroom(p);
@@ -39,7 +39,7 @@ function classroomHome(){
  const cs=SUBJECTS[state.subject]||[];
  return `<section class="page active"><div class="eyebrow">Discipline AI • Study Classroom</div>
  <div class="cr-top"><div><h1 class="title">${esc(state.subject)}</h1><p class="sub">Chapter-wise classroom — class se lekar notes aur DPP tak.</p></div><div class="cr-xp">⚡ XP ${calcXP()}</div></div>
- <div class="cr-tabs"><button class="btn ${state.subject==='Physics'?'active':''}" data-cr-sub="Physics">Physics</button><button class="btn ${state.subject==='Chemistry'?'active':''}" data-cr-sub="Chemistry">Chemistry</button><button class="btn ${state.subject==='Mathematics'?'active':''}" data-cr-sub="Mathematics">Mathematics</button><button class="btn ${state.subject==='English'?'active':''}" data-cr-sub="English">English</button><button class="btn ${state.subject==='Hindi'?'active':''}" data-cr-sub="Hindi">Hindi</button></div>
+ <div class="cr-tabs"><button type="button" class="btn ${state.subject==='Physics'?'active':''}" data-cr-sub="Physics">Physics</button><button type="button" class="btn ${state.subject==='Chemistry'?'active':''}" data-cr-sub="Chemistry">Chemistry</button><button type="button" class="btn ${state.subject==='Mathematics'?'active':''}" data-cr-sub="Mathematics">Mathematics</button><button type="button" class="btn ${state.subject==='English'?'active':''}" data-cr-sub="English">English</button><button type="button" class="btn ${state.subject==='Hindi'?'active':''}" data-cr-sub="Hindi">Hindi</button></div>
  <div class="card cr-banner">📌 <b>My Classroom:</b> kisi aur app par jaane ki zarurat nahi. Lecture yahin play hoga, PDF yahin open hogi, notes yahin likh sakte ho aur completion isi browser me save rahega.</div>
  <div class="cr-chapters">${cs.map((c,i)=>{const ls=count(c,'lecture'),dp=count(c,'dpp-pdf')+count(c,'dpp-video'),ld=completion(c,'lecture'),dd=completion(c,'dpp');const pct=Math.round(((ls?Math.min(ld,ls)/ls:0)+(dp?Math.min(dd,dp)/dp:0))/((ls?1:0)+(dp?1:0)||1)*100);return `<div class="card cr-chapter" data-cr-chapter="${esc(c)}"><div class="muted">CH-${String(i+1).padStart(2,'0')}</div><h3>${esc(c)}</h3><div class="cr-meta"><span>🎥 Lectures ${ld}/${ls}</span><span>📝 DPP ${dd}/${dp}</span></div><div class="cr-bar"><i style="width:${pct}%"></i></div><div class="cr-meta"><span>${pct}% chapter progress</span><span>Open →</span></div></div>`}).join('')}</div></section>`;
 }
@@ -47,7 +47,7 @@ function calcXP(){let xp=0;Object.values(done()).forEach(v=>{xp+=Number(v.xp||0)
 function renderClassroom(p){
  p.innerHTML=state.chapter?classroomRoom():classroomHome();
  if(!state.chapter){
-   document.querySelectorAll('[data-cr-sub]').forEach(b=>b.onclick=()=>openClassroom(b.dataset.crSub));
+   document.querySelectorAll('[data-cr-sub]').forEach(b=>b.onclick=()=>openClassroom(b.dataset.crSub,''));
    document.querySelectorAll('[data-cr-chapter]').forEach(b=>b.onclick=()=>openClassroom(state.subject,b.dataset.crChapter));
  }else bindRoom();
  window.scrollTo({top:0,behavior:'smooth'});
