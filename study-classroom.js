@@ -1,11 +1,39 @@
-function classroomHome(){
- const cs=SUBJECTS[state.subject]||[];
- return `<section class="page active"><div class="eyebrow">Discipline AI • Study Classroom</div>
- <div class="cr-top"><div><h1 class="title">${esc(state.subject)}</h1><p class="sub">Chapter-wise classroom — class se lekar notes aur DPP tak.</p></div><div class="cr-xp">⚡ XP ${calcXP()}</div></div>
- <div class="cr-tabs"><button type="button" class="btn ${state.subject==='Physics'?'active':''}" data-cr-sub="Physics">Physics</button><button type="button" class="btn ${state.subject==='Chemistry'?'active':''}" data-cr-sub="Chemistry">Chemistry</button><button type="button" class="btn ${state.subject==='Mathematics'?'active':''}" data-cr-sub="Mathematics">Mathematics</button><button type="button" class="btn ${state.subject==='English'?'active':''}" data-cr-sub="English">English</button><button type="button" class="btn ${state.subject==='Hindi'?'active':''}" data-cr-sub="Hindi">Hindi</button></div>
- <div class="card cr-banner">📌 <b>My Classroom:</b> kisi aur app par jaane ki zarurat nahi. Lecture yahin play hoga, PDF yahin open hogi, notes yahin likh sakte ho aur completion isi browser me save rahega.</div>
- <div class="cr-chapters">${cs.map((c,i)=>{const ls=count(c,'lecture'),dp=count(c,'dpp-pdf')+count(c,'dpp-video'),ld=completion(c,'lecture'),dd=completion(c,'dpp');const pct=Math.round(((ls?Math.min(ld,ls)/ls:0)+(dp?Math.min(dd,dp)/dp:0))/((ls?1:0)+(dp?1:0)||1)*100);return `<div class="card cr-chapter" data-cr-chapter="${esc(c)}"><div class="muted">CH-${String(i+1).padStart(2,'0')}</div><h3>${esc(c)}</h3><div class="cr-meta"><span>🎥 Lectures ${ld}/${ls}</span><span>📝 DPP ${dd}/${dp}</span></div><div class="cr-bar"><i style="width:${pct}%"></i></div><div class="cr-meta"><span>${pct}% chapter progress</span><span>Open →</span></div></div>`}).join('')}</div></section>`;
+(()=>{'use strict';
+const DB='discipline_ai_study_library_v1',STORE='resources',NOTE_KEY='discipline_ai_class_notes_v1',DONE_KEY='discipline_ai_class_done_v1';
+const SUBJECTS=(window.DisciplineLibrary&&window.DisciplineLibrary.subjects)||{};
+const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+const ytId=url=>{try{const u=new URL(url);if(u.hostname.includes('youtu.be'))return u.pathname.slice(1).split('/')[0];if(u.searchParams.get('v'))return u.searchParams.get('v');const m=u.pathname.match(/\\/embed\\/([^/]+)/);if(m)return m[1];const live=u.pathname.match(/\\/live\\/([^/]+)/);if(live)return live[1];const shorts=u.pathname.match(/\\/shorts\\/([^/]+)/);return shorts?shorts[1]:''}catch{return''}};
+const openDB=()=>new Promise((res,rej)=>{const r=indexedDB.open(DB,1);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+const all=async()=>{const db=await openDB();return new Promise((res,rej)=>{const q=db.transaction(STORE,'readonly').objectStore(STORE).getAll();q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})};
+const put=async x=>{const db=await openDB();return new Promise((res,rej)=>{const q=db.transaction(STORE,'readwrite').objectStore(STORE).add(x);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})};
+const notes=()=>{try{return JSON.parse(localStorage.getItem(NOTE_KEY))||{}}catch{return{}}};
+const done=()=>{try{return JSON.parse(localStorage.getItem(DONE_KEY))||{}}catch{return{}}};
+const saveNotes=x=>localStorage.setItem(NOTE_KEY,JSON.stringify(x));
+const saveDone=x=>localStorage.setItem(DONE_KEY,JSON.stringify(x));
+const key=(s,c)=>s+'::'+c;
+let items=[],state={subject:'Physics',chapter:'',tab:'all',openResource:null};
+function css(){
+ if(document.getElementById('classroomCss'))return;
+ const st=document.createElement('style');st.id='classroomCss';st.textContent=`
+.classroom-wrap{margin-top:16px}.cr-top{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.cr-xp{font-weight:800}.cr-tabs,.cr-subtabs{display:flex;gap:8px;overflow:auto;padding:8px 0}.cr-tabs button,.cr-subtabs button{white-space:nowrap}.cr-tabs .active,.cr-subtabs .active{background:var(--accent,#6d5dfc);color:#fff}.cr-chapters,.cr-subjects{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}.cr-chapter,.cr-subject{cursor:pointer;transition:.18s}.cr-chapter:hover,.cr-subject:hover{transform:translateY(-2px)}.cr-chapter h3,.cr-subject h3{margin:0 0 7px}.cr-meta{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted,#8f98ad)}.cr-bar{height:7px;border-radius:99px;background:rgba(127,127,127,.18);overflow:hidden;margin:10px 0}.cr-bar i{display:block;height:100%;background:var(--accent,#6d5dfc)}.cr-room{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(250px,.7fr);gap:14px}.cr-player,.cr-list,.cr-note{min-width:0}.cr-video{width:100%;aspect-ratio:16/9;border:0;border-radius:14px;background:#000}.cr-pdf{width:100%;height:72vh;border:0;border-radius:14px;background:#111}.cr-resource{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border:1px solid rgba(127,127,127,.16);border-radius:12px;margin:8px 0}.cr-resource.active{outline:2px solid var(--accent,#6d5dfc)}.cr-resource small{display:block;color:var(--muted,#8f98ad);margin-top:3px}.cr-note textarea{width:100%;min-height:420px;resize:vertical}.cr-banner{padding:12px 14px;border-radius:12px;background:rgba(109,93,252,.10);margin:12px 0}.cr-empty{text-align:center;padding:30px 12px;color:var(--muted,#8f98ad)}.cr-actions{display:flex;gap:8px;flex-wrap:wrap}.cr-check{display:flex;gap:8px;align-items:center}.cr-form{display:grid;gap:10px}.cr-form .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.seq,.cr-num{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--muted,#8f98ad)}.cr-room-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}.cr-room-action{padding:14px;border:1px solid rgba(127,127,127,.16);border-radius:12px;cursor:pointer}.cr-room-action small{display:block;color:var(--muted,#8f98ad);margin-top:5px}@media(max-width:800px){.cr-room{grid-template-columns:1fr}.cr-form .row{grid-template-columns:1fr}.cr-pdf{height:65vh}.cr-room-actions{grid-template-columns:1fr 1fr}}`;
+ document.head.appendChild(st);
 }
+function dashboardCard(){
+ const p=document.getElementById('pages');if(!p||document.getElementById('classroomCard'))return;
+ const card=document.createElement('div');card.id='classroomCard';card.className='card classroom-wrap';
+ card.innerHTML='<div class="cr-top"><div><h3>🎓 Study Classroom</h3><p class="muted">Lecture, PDF, notes, DPP aur progress — isi website ke andar.</p></div><button class="btn" id="openClassroomBtn">Open Classroom</button></div>';
+ p.prepend(card);document.getElementById('openClassroomBtn').onclick=()=>openClassroom();
+}
+async function openClassroom(subject=state.subject,chapter=''){
+ state.subject=subject;state.chapter=chapter||'';state.tab='all';state.openResource=null;
+ const p=document.getElementById('pages');if(!p)return;css();
+ try{items=await all()}catch(e){items=[]}
+ renderClassroom(p);
+}
+function chapterResources(s,c){return items.filter(x=>x.subject===s&&x.chapter===c)}
+function kindOf(x){return x.kind||(x.type==='youtube'?'lecture':'notes')}
+function count(c,kind){return chapterResources(state.subject,c).filter(x=>kindOf(x)===kind).length}
+function completion(c,kind){const d=done()[key(state.subject,c)]||{};return Number(d[kind]||0)}
 function classroomHome(){
  const subjectNames=Object.keys(SUBJECTS);
  const cs=SUBJECTS[state.subject]||[];
