@@ -105,6 +105,12 @@ function parseChapter(q,subject){
 }
 function studyBrainAnswer(raw){
  const q=String(raw||'').trim(),l=q.toLowerCase();if(!q)return null;
+ const b0=brain();b0.chat=Array.isArray(b0.chat)?b0.chat:[];b0.chat.unshift({at:new Date().toISOString(),q:q});b0.chat=b0.chat.slice(0,30);save(b0);
+ if(/^(haan|ha|yes|okay|ok|continue|theek hai|kar do)$/i.test(q)&&b0.chat[1]?.q){
+   const prev=b0.chat[1].q;
+   if(/(lecture|youtube|video)/i.test(prev)){const s=['Physics','Chemistry','Mathematics','English','Hindi','English Grammar'].find(x=>new RegExp(x,'i').test(prev));const c=parseChapter(prev,s);if(c){libraryCommand(s,c,'youtube').then(x=>window.JarvisBrainSay?.(x));return '__ASYNC__'}}
+   if(/(pdf|notes)/i.test(prev)){const s=['Physics','Chemistry','Mathematics','English','Hindi','English Grammar'].find(x=>new RegExp(x,'i').test(prev));const c=parseChapter(prev,s);if(c){libraryCommand(s,c,'pdf').then(x=>window.JarvisBrainSay?.(x));return '__ASYNC__'}}
+ }
  const b=refreshTopics();
  if(/\b(remember|yaad rakho|save)\b/.test(l)&&/\b(my|meri|mera|mere)\b/.test(l)){const text=q.replace(/^.*?\b(?:remember|yaad rakho|save)\b\s*/i,'');b.preferences.note=text;save(b);return 'Yaad rakh liya. Ye Study Brain ki local memory me save hai.'}
  if(/\b(memory|yaad|remember)\b/.test(l)&&/(show|dikhao|kya|what)/.test(l)){const m=Object.entries(b.preferences).map(([k,v])=>k+': '+v);return m.length?'Saved study memory: '+m.join('; '):'Abhi custom study memory saved nahi hai.'}
@@ -114,7 +120,12 @@ function studyBrainAnswer(raw){
  if(/(revision|revise).*(mark|complete|done|ho gaya)/.test(l)){const subject=['Physics','Chemistry','Mathematics','English','Hindi'].find(s=>new RegExp(s,'i').test(q));const c=parseChapter(q,subject);if(subject&&c){markRevision(subject,c);return 'Revision complete mark kar diya: '+subject+' → '+c+'.'}return 'Subject aur chapter ka naam bhi bolo, jaise: Current Electricity revision complete.'}
  if(/(wrong|mistake).*(repeat|repeated|baar baar|again|same|intelligence|analysis)/.test(l)){const m=mistakeProfile().filter(x=>x.count>1);return m.length?'Repeated mistakes: '+m.slice(0,5).map(x=>x.subject+' → '+x.chapter+' — '+x.count+'× ('+x.label+')').join('; '):'Abhi repeated mistake pattern nahi mila.'}
  if(/(why.*weak|weak.*why|kyun weak|kamzor.*kyu|reason.*weak)/.test(l)){const subject=['Physics','Chemistry','Mathematics','English','Hindi'].find(s=>new RegExp(s,'i').test(q));const c=parseChapter(q,subject);if(subject&&c){const w=whyWeak(subject,c);return subject+' → '+c+': '+w.text+' Accuracy '+w.accuracy+'%, tests '+w.tests+'.'}return 'Subject + chapter bolo, jaise: Why is Current Electricity weak?'}
- if(/(analytics|analytics report|real analysis|study analytics|dashboard analysis)/.test(l)){openBrainReport();return 'Advanced Study Analytics open kar diya.'}
+ if(/(start|shuru|begin).*(test|quiz)|test.*start|quiz.*start/.test(l)){
+ const subject=['Physics','Chemistry','Mathematics','English','Hindi'].find(s=>new RegExp(s,'i').test(q)),ch=parseChapter(q,subject);
+ if(subject&&ch&&typeof window.startQuestionTest==='function'){window.startQuestionTest(subject,ch,10,15,'brain');return 'Test start kar raha hoon: '+subject+' → '+ch+'.'}
+ return 'Test start karne ke liye subject + chapter bolo, jaise: Current Electricity ka test start karo.';
+}
+if(/(analytics|analytics report|real analysis|study analytics|dashboard analysis)/.test(l)){openBrainReport();return 'Advanced Study Analytics open kar diya.'}
  if(/(xp|level|streak|achievement)/.test(l)){const x=xpInfo();return 'Level: '+x.level+' · XP: '+x.xp+' · Streak: '+x.streak+' days · Achievements: '+(x.achievements.join(', ')||'none')+'.'}
  if(/(library|lecture|pdf|notes)/.test(l)){let subject=['Physics','Chemistry','Mathematics','English','Hindi','English Grammar'].find(s=>new RegExp(s,'i').test(q));const c=parseChapter(q,subject);const type=/lecture|youtube|video/.test(l)?'youtube':/pdf|notes/.test(l)?'pdf':null;if(/open|kholo|dikhao|show/.test(l)){libraryCommand(subject,c,type).then(x=>window.JarvisBrainSay?.(x));return '__ASYNC__'}return libraryCommand(subject,c,type).then(x=>x)}
  if(/(performance|analysis|score|accuracy).*(chapter|topic)/.test(l)){const subject=['Physics','Chemistry','Mathematics','English','Hindi'].find(s=>new RegExp(s,'i').test(q));const c=parseChapter(q,subject);if(subject&&c){const a=analyzeChapter(subject,c);return subject+' → '+c+': '+a.accuracy+'% accuracy, '+a.attempts+' tests, '+a.correct+'/'+a.total+' correct. '+(a.latest?'Last test '+a.latest.percent+'%.':'No latest test.')}} 
@@ -128,7 +139,7 @@ function openBrainReport(){
  r.innerHTML='<div class="sbr"><b>🧠 Advanced Study Brain</b><div class="sbr-grid"><span><strong>'+x.xp+'</strong><small>XP</small></span><span><strong>'+x.streak+'</strong><small>Day Streak</small></span><span><strong>'+due.length+'</strong><small>Revision Due</small></span><span><strong>'+mist.length+'</strong><small>Repeated Mistakes</small></span></div><div><b>🎯 Next Task</b><p>'+esc((()=>{const n=nextTask();return n.subject+' → '+n.chapter+' · '+n.why})())+'</p></div><div><b>❌ Weak Signals</b><p>'+esc(weak.length?weak.map(t=>t.subject+' → '+t.chapter+' '+t.accuracy+'%').join(' · '):'Not enough test data')+'</p></div><div><b>🔄 Revision</b><p>'+esc(due.length?due.slice(0,5).map(r=>r.subject+' → '+r.chapter+' ('+r.nextDue+')').join(' · '):'No revision due')+'</p></div><div><b>🏆 Achievements</b><p>'+esc(x.achievements.join(' · ')||'Complete study/test/revision activity to unlock.')+'</p></div></div>';
 }
 window.DisciplineBrain={answer:studyBrainAnswer,refresh:refreshTopics,dueRevisions,nextTask,xpInfo,markRevision,ensureRevision,mistakeProfile,whyWeak,openReport:openBrainReport,routineNow:()=>{const s=window.DisciplineMasterRoutine;return s?.now?s.now():null}};
-window.JarvisBrainSay=(t)=>{const o=document.getElementById('jarvisReply');if(o)o.textContent=t;if('speechSynthesis'in window){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-IN';u.rate=.94;speechSynthesis.speak(u)}catch{}}};
+window.JarvisBrainSay=(t)=>{const o=document.getElementById('jarvisReply');if(o)o.textContent=t;if('speechSynthesis'in window){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang=/[\u0900-\u097f]/.test(String(t))?'hi-IN':'en-IN';u.rate=.94;speechSynthesis.speak(u)}catch{}}};
 function inject(){
  const hook=()=>{
   const panel=document.getElementById('jarvisPanel');if(!panel)return setTimeout(hook,300);
