@@ -72,13 +72,38 @@ function showNotes(){
  p.appendChild(box);document.getElementById('saveChapterNotes').onclick=()=>{const z=notes();z[k]=document.getElementById('myChapterNotes').value;saveNotes(z);document.getElementById('saveChapterNotes').textContent='✅ Saved';setTimeout(()=>document.getElementById('saveChapterNotes').textContent='Save Notes',1000)};document.getElementById('closeNotes').onclick=()=>box.remove();box.scrollIntoView({behavior:'smooth'});
 }
 function showAddMaterial(){
- if(!state.chapter){alert('Pehle Classroom me subject aur chapter select karo.');return;}
  const p=document.getElementById('pages');
  if(document.getElementById('classMaterialForm')){document.getElementById('classMaterialForm').scrollIntoView({behavior:'smooth'});return;}
- const box=document.createElement('div');box.id='classMaterialForm';box.className='card cr-note';box.innerHTML=`<div class="section"><div><h3>➕ Add Class Material</h3><p class="muted">Material website ke classroom me save hoga.</p></div><button class="btn secondary" id="closeAdd">Close</button></div>
- <div class="cr-form"><label>Type<select id="matType" class="select"><option value="lecture">Lecture — YouTube</option><option value="notes">Notes — PDF</option><option value="dpp-pdf">DPP — PDF</option><option value="dpp-video">DPP — Video</option></select></label><label>Title<input id="matTitle" class="input" placeholder="Lecture / Notes / DPP title"></label><label id="matUrlWrap">YouTube URL<input id="matUrl" class="input" placeholder="https://youtube.com/watch?v=..."></label><label id="matFileWrap" style="display:none">PDF file<input id="matFile" type="file" accept="application/pdf"></label><button class="btn" id="saveMaterial">Save to Classroom</button></div>`;
- p.appendChild(box);const t=box.querySelector('#matType'),uw=box.querySelector('#matUrlWrap'),fw=box.querySelector('#matFileWrap');t.onchange=()=>{const isPdf=t.value==='notes'||t.value==='dpp-pdf';uw.style.display=isPdf?'none':'block';fw.style.display=isPdf?'block':'none'};t.onchange();box.querySelector('#closeAdd').onclick=()=>box.remove();box.querySelector('#saveMaterial').onclick=async()=>{const kind=t.value,title=box.querySelector('#matTitle').value.trim()||'Untitled';const x={subject:state.subject,chapter:state.chapter,title,kind,createdAt:new Date().toISOString(),uid:(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random())};if(kind==='lecture'||kind==='dpp-video'){x.type='youtube';x.url=box.querySelector('#matUrl').value.trim();if(!ytId(x.url))return alert('Valid YouTube URL add karo.')}else{x.type='pdf';const f=box.querySelector('#matFile').files[0];if(!f)return alert('PDF choose karo.');x.fileName=f.name;x.mime=f.type;x.blob=f}await put(x);items=await all();box.remove();state.tab='all';state.openResource=x.uid;renderClassroom(document.getElementById('pages'))};
+ const box=document.createElement('div');box.id='classMaterialForm';box.className='card cr-note';
+ const currentSubject=state.subject||'Physics', currentChapter=state.chapter||'';
+ box.innerHTML=`<div class="section"><div><h3>➕ Add Class</h3><p class="muted">Lecture ko subject aur chapter ke andar save karo. Save ke baad wahi chapter automatically open hoga.</p></div><button class="btn secondary" id="closeAdd">Close</button></div>
+ <div class="cr-form">
+ <div class="row"><label>Subject<select id="matSubject" class="select">${Object.keys(SUBJECTS).map(s=>`<option value="${esc(s)}" ${s===currentSubject?'selected':''}>${esc(s)}</option>`).join('')}</select></label>
+ <label>Chapter<select id="matChapter" class="select"></select></label></div>
+ <div class="row"><label>Lecture No.<input id="matLectureNo" class="input" type="number" min="1" placeholder="1"></label><label>Duration<input id="matDuration" class="input" placeholder="e.g. 52 min"></label></div>
+ <label>Lecture Title<input id="matTitle" class="input" placeholder="e.g. Electric Current — Lecture 01"></label>
+ <label>Type<select id="matType" class="select"><option value="lecture">🎥 Class Lecture — YouTube</option><option value="notes">📄 Notes — PDF</option><option value="dpp-pdf">📝 DPP — PDF</option><option value="dpp-video">🎥 DPP — Video</option></select></label>
+ <label id="matUrlWrap">YouTube URL<input id="matUrl" class="input" placeholder="https://youtube.com/live/..."></label>
+ <label id="matFileWrap" style="display:none">PDF file<input id="matFile" type="file" accept="application/pdf"></label>
+ <button class="btn" id="saveMaterial">Save to Classroom</button></div>`;
+ p.appendChild(box);
+ const sub=box.querySelector('#matSubject'),ch=box.querySelector('#matChapter'),t=box.querySelector('#matType'),uw=box.querySelector('#matUrlWrap'),fw=box.querySelector('#matFileWrap');
+ const fill=()=>{const list=SUBJECTS[sub.value]||[];ch.innerHTML='<option value="">Select Chapter</option>'+list.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');if(sub.value===currentSubject&&currentChapter&&list.includes(currentChapter))ch.value=currentChapter};
+ fill();sub.onchange=fill;
+ t.onchange=()=>{const isPdf=t.value==='notes'||t.value==='dpp-pdf';uw.style.display=isPdf?'none':'block';fw.style.display=isPdf?'block':'none'};t.onchange();
+ box.querySelector('#closeAdd').onclick=()=>box.remove();
+ box.querySelector('#saveMaterial').onclick=async()=>{
+   const subject=sub.value,chapter=ch.value,kind=t.value,title=box.querySelector('#matTitle').value.trim()||'Untitled';
+   if(!chapter)return alert('Subject ke andar chapter select karo.');
+   const x={subject,chapter,title,kind,createdAt:new Date().toISOString(),uid:(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random())};
+   const no=box.querySelector('#matLectureNo').value.trim(),dur=box.querySelector('#matDuration').value.trim();
+   if(no)x.lectureNo=Number(no);if(dur)x.duration=dur;
+   if(kind==='lecture'||kind==='dpp-video'){x.type='youtube';x.url=box.querySelector('#matUrl').value.trim();if(!ytId(x.url))return alert('Valid YouTube URL add karo.')}
+   else{x.type='pdf';const f=box.querySelector('#matFile').files[0];if(!f)return alert('PDF choose karo.');x.fileName=f.name;x.mime=f.type;x.blob=f}
+   await put(x);items=await all();box.remove();state.subject=subject;state.chapter=chapter;state.tab=kind==='lecture'||kind==='dpp-video'?(kind==='lecture'?'lectures':'dpp-videos'):(kind==='notes'?'notes':'dpp-pdfs');state.openResource=x.uid;renderClassroom(document.getElementById('pages'));
+ };
 }
+
 const ob=new MutationObserver(()=>{css();dashboardCard()});ob.observe(document.body,{childList:true,subtree:true});setTimeout(()=>{css();dashboardCard()},900);
 window.DisciplineClassroom={open:openClassroom};
 })();
