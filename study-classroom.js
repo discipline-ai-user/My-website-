@@ -1,6 +1,6 @@
 (()=>{'use strict';
 const DB='discipline_ai_study_library_v1',STORE='resources',NOTE_KEY='discipline_ai_class_notes_v1',DONE_KEY='discipline_ai_class_done_v1';
-const SUBJECTS=(window.DisciplineLibrary&&window.DisciplineLibrary.subjects)||{
+const CLASSROOM_FALLBACK_SUBJECTS=
  Physics:['Electric Charges and Fields','Electrostatic Potential and Capacitance','Current Electricity','Moving Charges and Magnetism','Magnetism and Matter','Electromagnetic Induction','Alternating Current','Electromagnetic Waves','Ray Optics and Optical Instruments','Wave Optics','Dual Nature of Radiation and Matter','Atoms','Nuclei','Semiconductor Electronics'],
  Chemistry:['Solutions','Electrochemistry','Chemical Kinetics','d- and f-Block Elements','Coordination Compounds','Haloalkanes and Haloarenes','Alcohols, Phenols and Ethers','Aldehydes, Ketones and Carboxylic Acids','Amines','Biomolecules, Polymers and Chemistry in Everyday Life'],
  Mathematics:['Relations and Functions','Inverse Trigonometric Functions','Matrices','Determinants','Continuity and Differentiability','Application of Derivatives','Integrals','Application of Integrals','Differential Equations','Vector Algebra','Three Dimensional Geometry','Linear Programming','Probability'],
@@ -8,6 +8,8 @@ const SUBJECTS=(window.DisciplineLibrary&&window.DisciplineLibrary.subjects)||{
  Hindi:['बातचीत','उसने कहा था','संपूर्ण क्रांति','अर्थनारीश्वर','रोज','एक लेख और एक पत्र','ओ सदानीरा','सिपाही की माँ','प्रेम और समाज','जूठन','हँसते हुए मेरा अकेलापन','तिरिछ','शिक्षा','कड़बक','पद — सूरदास','पद — तुलसीदास','छप्पय','कवित्त','तुमुल कोलाहल कलह में','पुत्र-वियोग','उषा','जन-जन का चेहरा एक','अधिनायक','प्यारे नन्हें बेटे को','हार-जीत','गाँव का घर','रस्सी का टुकड़ा','क्लर्क की मौत','पैगनी'],
  'English Grammar':['Tenses','Narration (Direct and Indirect Speech)','Voice (Active and Passive)','Modals','Articles','Prepositions','Conjunctions','Subject-Verb Agreement','Parts of Speech','Transformation of Sentences','Question Tags','Adjective','Adverb']
 };
+const LIBRARY_SUBJECTS=(window.DisciplineLibrary&&window.DisciplineLibrary.subjects)||{};
+const SUBJECTS=Object.keys(LIBRARY_SUBJECTS).length?LIBRARY_SUBJECTS:CLASSROOM_FALLBACK_SUBJECTS;;
 const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 const ytId=url=>{try{const u=new URL(url);if(u.hostname.includes('youtu.be'))return u.pathname.slice(1).split('/')[0];if(u.searchParams.get('v'))return u.searchParams.get('v');const m=u.pathname.match(/\/embed\/([^/]+)/);if(m)return m[1];const live=u.pathname.match(/\/live\/([^/]+)/);if(live)return live[1];const shorts=u.pathname.match(/\/shorts\/([^/]+)/);return shorts?shorts[1]:''}catch{return''}};
 const openDB=()=>new Promise((res,rej)=>{const r=indexedDB.open(DB,1);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
